@@ -48,6 +48,7 @@ public class Chara : MonoBehaviour
                 squat();
                 break;
             case BODY_STATUS.SLIDING:
+                sliding();
                 break;
         }
     }
@@ -60,16 +61,20 @@ public class Chara : MonoBehaviour
 
         Debug.DrawRay(ray.origin, ray.direction * rayLen, Color.red, 5.0f);
         isGround = Physics.Raycast(ray, rayLen);
-        Debug.Log(isGround ? "TRUE" : "FALSE");
     }
 
     private void stand()
     {
         this.transform.localScale = baseScale;
+        this.transform.rotation = Quaternion.Euler(Vector3.zero);
     }
     private void squat()
     {
         this.transform.localScale = baseScale/2;
+    }
+    private void sliding()
+    {
+        this.transform.rotation = Quaternion.Euler(Vector3.forward * 20);
     }
 
 
