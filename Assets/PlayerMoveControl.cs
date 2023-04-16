@@ -17,7 +17,8 @@ public class PlayerMoveControl : MonoBehaviour
 
 
     private float nowAccelerateTime = 0.0f;
-    private float slidingTime = 0.0f;
+    private float nowSlidingTime = 0.0f;
+    private Vector3 beforAddPos = Vector3.zero;
 
     Rigidbody rb;
     Chara ch;
@@ -37,17 +38,17 @@ public class PlayerMoveControl : MonoBehaviour
     {
         Transform trans = transform;
         transform.position = trans.position;
-
+        Vector3 addPos = Vector3.zero;
         //基本の動き
-        {            
+        {
             Vector3 verticalVec = trans.TransformDirection(Vector3.forward) * Input.GetAxis("Vertical");
             Vector3 horizontalVec = trans.TransformDirection(Vector3.right) * Input.GetAxis("Horizontal");
+
             float moveSpeed = 0.0f;
             float accelerate = 0.0f;
-            if (Input.GetKey(KeyCode.A) ||
-                Input.GetKey(KeyCode.W) ||
-                Input.GetKey(KeyCode.S) ||
-                Input.GetKey(KeyCode.D))
+            if ((Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.W) ||
+                Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D)) &&
+                ch.getBodyStatus() != Chara.BODY_STATUS.SLIDING )
             {
                 nowAccelerateTime += Time.deltaTime;
                 accelerate = nowAccelerateTime / maxAccelerateTime;
@@ -55,9 +56,33 @@ public class PlayerMoveControl : MonoBehaviour
                 moveSpeed = Math.Abs(horizontalVec.x) > 0 ? maxMoveWalkSpeed * accelerate : maxMoveRunSpeed * accelerate;
                 moveSpeed = verticalVec.z < 0 ? maxMoveBackSpeed * accelerate : moveSpeed;
             }
-            trans.position += ((verticalVec + horizontalVec) * moveSpeed).normalized;
+            else
+            {
+                nowAccelerateTime = 0f;
+            }
+            if (ch.getBodyStatus() == Chara.BODY_STATUS.SQUAT)
+            {   //しゃがみ時の移動処理
+                addPos = ( (verticalVec + horizontalVec).normalized * moveSpeed / 2f);
+            }
+            else
+            {
+                addPos = ((verticalVec + horizontalVec).normalized * moveSpeed);
+            }
 
-            Chara.BODY_STATUS bs = moveSpeed == maxMoveRunSpeed ? Chara.BODY_STATUS.RUN : Chara.BODY_STATUS.WALK;
+            Chara.BODY_STATUS bs;
+            if(moveSpeed >= maxMoveRunSpeed)
+            {
+                bs = Chara.BODY_STATUS.RUN;
+            }
+            else if( moveSpeed >= 0)
+            {
+                bs = Chara.BODY_STATUS.WALK;
+            }
+            else
+            {
+                bs = Chara.BODY_STATUS.STAND;
+            }
+
             ch.setBodyStatus(bs);
         }
 
@@ -72,13 +97,16 @@ public class PlayerMoveControl : MonoBehaviour
         {
             if (Input.GetKey(KeyCode.LeftControl))
             {
-                ch.setBodyStatus(Chara.BODY_STATUS.SQUAT);
-                if (ch.getBodyStatus() == Chara.BODY_STATUS.RUN)
+                if (ch.getBodyStatus() == Chara.BODY_STATUS.RUN || ch.getBodyStatus() == Chara.BODY_STATUS.SLIDING)
                 {
                     ch.setBodyStatus(Chara.BODY_STATUS.SLIDING);
                 }
+                else
+                {
+                    ch.setBodyStatus(Chara.BODY_STATUS.SQUAT);
+                }
             }
-            else
+            else if (Input.GetKeyUp(KeyCode.LeftControl))
             {
                 ch.setBodyStatus(Chara.BODY_STATUS.STAND);
             }
@@ -87,19 +115,18 @@ public class PlayerMoveControl : MonoBehaviour
         {
             if (ch.getBodyStatus() == Chara.BODY_STATUS.SLIDING)
             {
-                slidingTime += Time.deltaTime;
-                if (slidingTime >= maxSlidingTime)
+                Debug.Log($"{nowSlidingTime}");
+                nowSlidingTime += Time.deltaTime;
+                if(nowSlidingTime >= maxSlidingTime)
                 {
+                    nowSlidingTime = 0.0f;
                     ch.setBodyStatus(Chara.BODY_STATUS.STAND);
-                    slidingTime = 0.0f;
                 }
-                else
-                {
-
-                }
-                return;
+                addPos = beforAddPos ;
             }
-
         }
+        trans.position += addPos;
+        beforAddPos = addPos;
+
     }
 }

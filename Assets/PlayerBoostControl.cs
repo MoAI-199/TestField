@@ -5,12 +5,13 @@ using System;
 
 public class PlayerBoostControl : MonoBehaviour
 {
-    [SerializeField] private float boostDelayFrames = 10; //Spaceキー入力猶予フレーム数
-    [SerializeField] private float boostSpeed = 20; //ブースト速度
+    [SerializeField] private float boostDelayFrames = 10f; //Spaceキー入力猶予フレーム数
+    [SerializeField] private float boostLength = 20f; //移動距離
+    [SerializeField] private float boostTime = 2.0f; //ブースト速度
 
     private bool isBoosting = false; //ブースト中かどうかのフラグ
-    private int boostDelayCount = 0; //Spaceキー入力猶予用のカウンタ
     private Rigidbody rb;
+    private float nowTime = 0f;
 
     void Start()
     {
@@ -37,20 +38,36 @@ public class PlayerBoostControl : MonoBehaviour
         //ブースト無効化
         isBoosting = false;
         rb.useGravity = true;
-
-        Debug.Log("Boost disabled");
     }
 
     /// <summary>指定秒後に処理を呼ぶ</summary>
     /// <param name="seconds">遅延させるフレーム数</param>
     /// <param name="action">実行したい処理</param>
-    private IEnumerator DelayCoroutine(float seconds, Action action)
+    private IEnumerator DelayCoroutine(float waitSeconds)
     {
-        for (int i = 0; i < seconds; i++)
+        //待機フレーム
+        for (int i = 0; i < waitSeconds; i++)
         {
             yield return null;
         }
-        action();
+        //ブースト有効化
+        isBoosting = true;
+        //ブースト後の移動位置の算出
+        Vector3 nextPos = this.transform.position + this.transform.forward * boostLength;
+        
+        while (true)
+        {
+            Vector3 distance = nextPos - this.transform.position;
+            //移動量の算出
+            Vector3 vec = distance / ( boostTime * (1f / Time.deltaTime) );
+            this.transform.position += vec;
+            if(Vector3.Distance(nextPos, this.transform.position) < 5f)
+            {
+                break;
+            }
+            yield return this.transform.position += vec;
+        }
+        Debug.Log("boostEnd");
     }
 
     /// <summary>
@@ -58,19 +75,7 @@ public class PlayerBoostControl : MonoBehaviour
     /// </summary>
     private void doBoost()
     {
-        //遅延フレーム数＊１フレームあたりの秒数
-        StartCoroutine(DelayCoroutine(boostDelayCount, () =>
-        {
-            //ブースト有効化
-            isBoosting = true;
-            boostDelayCount = 0;
-            //ブースト速度のベクトルを算出
-            Vector3 boostVelocity = transform.forward * boostSpeed;
-            boostVelocity.y = rb.velocity.y;
-            //ブースト速度のベクトルを適用
-            rb.velocity = boostVelocity;
-            Debug.Log("Boost enabled");
-        }));
+        StartCoroutine(DelayCoroutine(boostDelayFrames));
     }
 
 }

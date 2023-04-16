@@ -13,6 +13,7 @@ public class Chara : MonoBehaviour
         RUN,
         SQUAT,
         SLIDING,
+        BOOST,
     }
 
     [SerializeField] private GameObject feild; // ƒWƒƒƒ“ƒv‚Ì‹­‚³
@@ -37,6 +38,7 @@ public class Chara : MonoBehaviour
     }
     private void updateBodyStatus()
     {
+        
         switch (_bodyStatus)
         {
             case BODY_STATUS.STAND:
@@ -49,6 +51,8 @@ public class Chara : MonoBehaviour
                 break;
             case BODY_STATUS.SLIDING:
                 sliding();
+                break;
+            case BODY_STATUS.BOOST:
                 break;
         }
     }
@@ -66,6 +70,7 @@ public class Chara : MonoBehaviour
     private void stand()
     {
         this.transform.localScale = baseScale;
+        this.transform.rotation = Quaternion.Euler(Vector3.zero);
         this.transform.rotation = Quaternion.Euler(Vector3.zero);
     }
     private void squat()
